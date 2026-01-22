@@ -42,100 +42,59 @@
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Dashboard Tab - Training Selection Wizard -->
+            <!-- Dashboard Tab -->
             <div class="tab-content active" id="dashboard-tab">
                 <div class="tab-scroll-area">
-                    <!-- Welcome Header -->
-                    <div class="glass-card" style="margin-bottom: 24px; text-align: center;">
-                        <h1 id="dashboardGreeting">Today's Training</h1>
-                        <p class="text-secondary" id="dashboardSubtitle">Let's build something amazing</p>
+                    <!-- AI Character -->
+                    <div class="ai-character">
+                        <div class="unicorn-head" id="aiCharacter">🦄</div>
+                        <div class="unicorn-horn"></div>
                     </div>
 
-                    <!-- Readiness Status -->
-                    <div class="readiness-gauge" style="margin-bottom: 24px;">
-                        <div class="gauge-value">
-                            <span id="dashReadiness">--</span>
+                    <!-- Welcome & Status -->
+                    <div class="glass-card">
+                        <h2 id="dashboardGreeting">Welcome back!</h2>
+                        <p class="text-secondary" id="dashboardMessage">Let's keep the momentum going</p>
+                    </div>
+
+                    <!-- Today's Metrics Grid -->
+                    <div class="glass-grid cols-2" style="margin-top: 20px;">
+                        <div class="metric-card">
+                            <div class="metric-label">Workouts</div>
+                            <div class="metric-value" id="dashTodayWorkouts">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Readiness</div>
+                            <div class="metric-value" id="dashTodayReadiness">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Streak</div>
+                            <div class="metric-value" id="dashStreak">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Volume</div>
+                            <div class="metric-value" id="dashVolume">0</div>
                         </div>
                     </div>
-                    <p class="text-tertiary" style="text-align: center; margin-bottom: 24px;" id="dashReadinessStatus">Log your check-in to see readiness</p>
-
-                    <!-- Training Selection Wizard -->
-                    <div class="glass-card" style="margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 16px;">1. Focus Area</h3>
-                        <div class="quick-buttons">
-                            <button class="quick-btn" data-training-type="strength">💪 Strength</button>
-                            <button class="quick-btn" data-training-type="hypertrophy">🔥 Hypertrophy</button>
-                            <button class="quick-btn" data-training-type="endurance">⚡ Endurance</button>
-                            <button class="quick-btn" data-training-type="sport">🏃 Sport</button>
-                        </div>
-                    </div>
-
-                    <!-- Intensity Sliders -->
-                    <div class="glass-card" style="margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 16px;">2. Target Intensity</h3>
-
-                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                            Upper Body Focus: <span id="upperValue">50</span>%
-                        </label>
-                        <input type="range" min="0" max="100" value="50" id="upperSlider" class="glass-slider" style="margin-bottom: 16px;">
-
-                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                            Lower Body Focus: <span id="lowerValue">50</span>%
-                        </label>
-                        <input type="range" min="0" max="100" value="50" id="lowerSlider" class="glass-slider" style="margin-bottom: 16px;">
-
-                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                            Core Focus: <span id="coreValue">30</span>%
-                        </label>
-                        <input type="range" min="0" max="100" value="30" id="coreSlider" class="glass-slider">
-                    </div>
-
-                    <!-- Equipment Selection -->
-                    <div class="glass-card" style="margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 16px;">3. Equipment Available</h3>
-                        <div class="quick-buttons">
-                            <button class="quick-btn" data-equipment="barbell">🏋️ Barbell</button>
-                            <button class="quick-btn" data-equipment="dumbbell">🔨 Dumbbell</button>
-                            <button class="quick-btn" data-equipment="machine">⚙️ Machine</button>
-                            <button class="quick-btn" data-equipment="bodyweight">🧘 Bodyweight</button>
-                        </div>
-                    </div>
-
-                    <!-- Persona Selection -->
-                    <div class="glass-card" style="margin-bottom: 24px;">
-                        <h3 style="margin-bottom: 16px;">4. Coaching Style</h3>
-                        <div class="quick-buttons">
-                            <button class="quick-btn" data-persona="aggressive">🔥 Aggressive</button>
-                            <button class="quick-btn" data-persona="balanced">⚖️ Balanced</button>
-                            <button class="quick-btn" data-persona="supportive">🤗 Supportive</button>
-                        </div>
-                    </div>
-
-                    <!-- Advanced Options -->
-                    <details>
-                        <summary class="glass-btn glass-btn-secondary" style="width: 100%; text-align: left; cursor: pointer;">
-                            ⚙️ Advanced Options
-                        </summary>
-                        <div class="glass-card" style="margin-top: 12px;">
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                                <input type="checkbox" id="focusRecovery"> Focus on Recovery
-                            </label>
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                                <input type="checkbox" id="focusBalance"> Balance Lagging Muscle Groups
-                            </label>
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">
-                                <input type="checkbox" id="includeWarmup"> Include Warm-up
-                            </label>
-                        </div>
-                    </details>
 
                     <!-- Quick Actions -->
-                    <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <button class="glass-btn glass-btn-primary" onclick="switchTab('record')" style="width: 100%;">
-                            📝 Start Training
+                    <h3 style="margin-top: 32px; margin-bottom: 16px;">Quick Actions</h3>
+                    <div class="quick-buttons">
+                        <button class="quick-btn" onclick="switchTab('record')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">📝</div>
+                            Log Workout
                         </button>
-                        <button class="glass-btn glass-btn-secondary" onclick="switchTab('history')" style="width: 100%;">
-                            📊 View Stats
+                        <button class="quick-btn" onclick="switchTab('condition')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">💪</div>
+                            Check-in
+                        </button>
+                        <button class="quick-btn" onclick="switchTab('history')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">📊</div>
+                            View Stats
+                        </button>
+                        <button class="quick-btn" onclick="switchTab('ai-coach')">
+                            <div style="font-size: 24px; margin-bottom: 4px;">🦄</div>
+                            Ask AI
                         </button>
                     </div>
                 </div>
@@ -198,19 +157,15 @@
                             <div id="setsContainer" style="margin-top: 16px;"></div>
                         </div>
 
-                        <!-- Step 4: RPE, Duration & Notes -->
+                        <!-- Step 4: RPE & Notes -->
                         <div class="record-step" id="recordStep4" style="display: none;">
-                            <h3>Intensity, Duration & Notes</h3>
+                            <h3>Intensity & Notes</h3>
                             <div style="margin-top: 16px;">
                                 <label class="text-secondary" style="display: block; margin-bottom: 8px;">RPE (Rate of Perceived Exertion)</label>
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <input type="range" min="1" max="10" value="5" id="rpeSlider" class="glass-slider" style="flex: 1;">
                                     <span id="rpeValue" style="min-width: 40px; text-align: center; font-weight: 600;">5</span>
                                 </div>
-                            </div>
-                            <div style="margin-top: 16px;">
-                                <label class="text-secondary" style="display: block; margin-bottom: 8px;">Total Duration (minutes)</label>
-                                <input type="number" id="durationInput" class="glass-input" placeholder="45" value="45" min="1" max="600">
                             </div>
                             <div style="margin-top: 16px;">
                                 <label class="text-secondary" style="display: block; margin-bottom: 8px;">Notes</label>
@@ -278,89 +233,66 @@
 
             <!-- Condition Tab -->
             <div class="tab-content" id="condition-tab">
-                <!-- Sub-tabs -->
-                <div class="tab-nav" style="background: transparent; border: none; padding: 12px;">
-                    <button class="tab-button active" data-subtab="today" onclick="switchConditionSubtab('today')">Today</button>
-                    <button class="tab-button" data-subtab="history" onclick="switchConditionSubtab('history')">History</button>
-                    <button class="tab-button" data-subtab="trends" onclick="switchConditionSubtab('trends')">Trends</button>
-                </div>
-
                 <div class="tab-scroll-area">
-                    <!-- Today's Check-in -->
-                    <div class="condition-subtab active" id="conditionToday">
-                        <h2 style="text-align: center; margin-bottom: 24px;">Morning Readiness Check-In</h2>
+                    <h2 style="text-align: center; margin-bottom: 24px;">Morning Readiness Check-In</h2>
 
-                        <!-- Readiness Gauge -->
-                        <div class="readiness-gauge">
-                            <div class="gauge-value">
-                                <span id="readinessScore">--</span>
-                            </div>
-                        </div>
-
-                        <!-- Readiness Level Text -->
-                        <p class="text-tertiary" style="text-align: center; margin-bottom: 24px;" id="readinessText">Log your check-in to see readiness</p>
-
-                        <!-- Check-in Inputs -->
-                        <div style="margin-bottom: 24px;">
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">Sleep Quality</label>
-                            <div class="quick-buttons">
-                                <button class="quick-btn" data-metric="sleep" data-value="1">😴</button>
-                                <button class="quick-btn" data-metric="sleep" data-value="2">😐</button>
-                                <button class="quick-btn" data-metric="sleep" data-value="3">😊</button>
-                                <button class="quick-btn" data-metric="sleep" data-value="4">😄</button>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 24px;">
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">Energy Level</label>
-                            <div class="quick-buttons">
-                                <button class="quick-btn" data-metric="energy" data-value="1">⚡</button>
-                                <button class="quick-btn" data-metric="energy" data-value="2">🔋</button>
-                                <button class="quick-btn" data-metric="energy" data-value="3">💪</button>
-                                <button class="quick-btn" data-metric="energy" data-value="4">🚀</button>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 24px;">
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">Soreness/Fatigue</label>
-                            <div class="quick-buttons">
-                                <button class="quick-btn" data-metric="soreness" data-value="1">😖</button>
-                                <button class="quick-btn" data-metric="soreness" data-value="2">😕</button>
-                                <button class="quick-btn" data-metric="soreness" data-value="3">😐</button>
-                                <button class="quick-btn" data-metric="soreness" data-value="4">😊</button>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 24px;">
-                            <label class="text-secondary" style="display: block; margin-bottom: 12px;">Mood</label>
-                            <div class="quick-buttons">
-                                <button class="quick-btn" data-metric="mood" data-value="1">😞</button>
-                                <button class="quick-btn" data-metric="mood" data-value="2">😐</button>
-                                <button class="quick-btn" data-metric="mood" data-value="3">😊</button>
-                                <button class="quick-btn" data-metric="mood" data-value="4">😄</button>
-                            </div>
-                        </div>
-
-                        <button class="glass-btn glass-btn-primary" onclick="saveCheckIn()" style="width: 100%;">Save Check-In</button>
-
-                        <!-- AI Insights -->
-                        <div class="glass-card" style="margin-top: 24px;">
-                            <h3>AI Readiness Forecast</h3>
-                            <p class="text-secondary" id="readinessForecast" style="margin-top: 12px;">Log your check-in to see forecast</p>
+                    <!-- Readiness Gauge -->
+                    <div class="readiness-gauge">
+                        <div class="gauge-value">
+                            <span id="readinessScore">--</span>
                         </div>
                     </div>
 
-                    <!-- History -->
-                    <div class="condition-subtab" id="conditionHistory" style="display: none;">
-                        <h3 style="margin-bottom: 16px;">Past 7 Days</h3>
-                        <div id="checkInHistory"></div>
+                    <!-- Readiness Level Text -->
+                    <p class="text-tertiary" style="text-align: center; margin-bottom: 24px;" id="readinessText">Log your check-in to see readiness</p>
+
+                    <!-- Check-in Inputs -->
+                    <div style="margin-bottom: 24px;">
+                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">Sleep Quality</label>
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-metric="sleep" data-value="1">😴</button>
+                            <button class="quick-btn" data-metric="sleep" data-value="2">😐</button>
+                            <button class="quick-btn" data-metric="sleep" data-value="3">😊</button>
+                            <button class="quick-btn" data-metric="sleep" data-value="4">😄</button>
+                        </div>
                     </div>
 
-                    <!-- Trends -->
-                    <div class="condition-subtab" id="conditionTrends" style="display: none;">
-                        <h3 style="margin-bottom: 16px;">Readiness Trends</h3>
-                        <canvas id="readinessTrendChart" style="max-width: 100%; margin-bottom: 24px;"></canvas>
-                        <div id="readinessSummary" class="glass-card"></div>
+                    <div style="margin-bottom: 24px;">
+                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">Energy Level</label>
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-metric="energy" data-value="1">⚡</button>
+                            <button class="quick-btn" data-metric="energy" data-value="2">🔋</button>
+                            <button class="quick-btn" data-metric="energy" data-value="3">💪</button>
+                            <button class="quick-btn" data-metric="energy" data-value="4">🚀</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">Soreness/Fatigue</label>
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-metric="soreness" data-value="1">😖</button>
+                            <button class="quick-btn" data-metric="soreness" data-value="2">😕</button>
+                            <button class="quick-btn" data-metric="soreness" data-value="3">😐</button>
+                            <button class="quick-btn" data-metric="soreness" data-value="4">😊</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label class="text-secondary" style="display: block; margin-bottom: 12px;">Mood</label>
+                        <div class="quick-buttons">
+                            <button class="quick-btn" data-metric="mood" data-value="1">😞</button>
+                            <button class="quick-btn" data-metric="mood" data-value="2">😐</button>
+                            <button class="quick-btn" data-metric="mood" data-value="3">😊</button>
+                            <button class="quick-btn" data-metric="mood" data-value="4">😄</button>
+                        </div>
+                    </div>
+
+                    <button class="glass-btn glass-btn-primary" onclick="saveCheckIn()" style="width: 100%;">Save Check-In</button>
+
+                    <!-- AI Insights -->
+                    <div class="glass-card" style="margin-top: 24px;">
+                        <h3>AI Readiness Forecast</h3>
+                        <p class="text-secondary" id="readinessForecast" style="margin-top: 12px;">Log your check-in to see forecast</p>
                     </div>
                 </div>
             </div>
@@ -455,9 +387,7 @@
 
     <!-- Scripts -->
     <script src="/js/auth-guard.js"></script>
-    <script src="/js/ai-character.js"></script>
     <script src="/js/supabase-client.js"></script>
-    <script src="/js/exercise-service.js"></script>
     <script src="/js/workout-service.js"></script>
     <script src="/js/index-page.js"></script>
     <script src="/js/tab-system.js"></script>
