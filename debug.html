@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strivus - Debug Connection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/config.js"></script>
+</head>
+<body class="bg-slate-900 text-white p-8">
+    <div class="max-w-2xl mx-auto space-y-6">
+        <h1 class="text-3xl font-bold">Strivus Connection Test</h1>
+
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-2">1. Config Test</h2>
+            <p class="text-sm text-slate-400 mb-2">Checking if config.js loaded...</p>
+            <pre id="config-test" class="bg-slate-900 p-3 rounded text-xs overflow-auto"></pre>
+        </div>
+
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-2">2. Supabase Client Test</h2>
+            <p class="text-sm text-slate-400 mb-2">Testing Supabase connection...</p>
+            <pre id="supabase-test" class="bg-slate-900 p-3 rounded text-xs overflow-auto"></pre>
+        </div>
+
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-2">3. Auth Test</h2>
+            <p class="text-sm text-slate-400 mb-2">Checking current session...</p>
+            <pre id="auth-test" class="bg-slate-900 p-3 rounded text-xs overflow-auto"></pre>
+        </div>
+
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-2">4. Database Write Test</h2>
+            <button id="test-write" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                Test Writing to Database
+            </button>
+            <pre id="write-test" class="bg-slate-900 p-3 rounded text-xs overflow-auto mt-3"></pre>
+        </div>
+
+        <a href="/index.html" class="inline-block bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded">
+            ← Back to App
+        </a>
+    </div>
+
+    <script type="module">
+        import { supabase } from './js/supabase-client.js';
+
+        // Test 1: Config
+        const configTest = document.getElementById('config-test');
+        if (window.SUPABASE_CONFIG) {
+            configTest.textContent = `✅ Config loaded!\n\nURL: ${window.SUPABASE_CONFIG.url}\nKey: ${window.SUPABASE_CONFIG.anonKey.substring(0, 20)}...`;
+            configTest.classList.add('text-green-400');
+        } else {
+            configTest.textContent = '❌ Config NOT loaded. config.js file missing or path incorrect.';
+            configTest.classList.add('text-red-400');
+        }
+
+        // Test 2: Supabase Client
+        const supabaseTest = document.getElementById('supabase-test');
+        if (supabase) {
+            supabaseTest.textContent = '✅ Supabase client initialized successfully!';
+            supabaseTest.classList.add('text-green-400');
+        } else {
+            supabaseTest.textContent = '❌ Supabase client failed to initialize.';
+            supabaseTest.classList.add('text-red-400');
+        }
+
+        // Test 3: Auth
+        const authTest = document.getElementById('auth-test');
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+
+            if (session) {
+                authTest.textContent = `✅ Logged in!\n\nUser ID: ${session.user.id}\nEmail: ${session.user.email}`;
+                authTest.classList.add('text-green-400');
+            } else {
+                authTest.textContent = '⚠️ Not logged in. Please log in first at /auth.html';
+                authTest.classList.add('text-yellow-400');
+            }
+        } catch (error) {
+            authTest.textContent = `❌ Auth error: ${error.message}`;
+            authTest.classList.add('text-red-400');
+        }
+
+        // Test 4: Database Write
+        document.getElementById('test-write').addEventListener('click', async () => {
+            const writeTest = document.getElementById('write-test');
+            writeTest.textContent = 'Testing...';
+            writeTest.classList.remove('text-green-400', 'text-red-400');
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    writeTest.textContent = '❌ Not logged in. Please log in at /auth.html first.';
+                    writeTest.classList.add('text-red-400');
+                    return;
+                }
+
+                // Try to insert a test check-in
+                const { data, error } = await supabase
+                    .from('user_check_ins')
+                    .insert([{
+                        user_id: session.user.id,
+                        check_in_date: new Date().toISOString().split('T')[0],
+                        sleep_quality: 3,
+                        stress_level: 3,
+                        nutrition_quality: 3
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                writeTest.textContent = `✅ SUCCESS! Data written to database!\n\n${JSON.stringify(data, null, 2)}`;
+                writeTest.classList.add('text-green-400');
+            } catch (error) {
+                writeTest.textContent = `❌ Write failed: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`;
+                writeTest.classList.add('text-red-400');
+            }
+        });
+    </script>
+</body>
+</html>

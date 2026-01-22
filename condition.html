@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strivus - Condition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'action-blue': '#02B2FC',
+                        'action-blue-hover': '#0298d6',
+                        'accent-blue': '#0235FC',
+                        'accent-teal': '#02FCC9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .control-card { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 1rem; padding: 1.5rem; }
+        .gauge-container { position: relative; width: 150px; height: 75px; overflow: hidden; }
+        .gauge-bg, .gauge-fill {
+            position: absolute;
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            border: 20px solid;
+            box-sizing: border-box;
+            top: 0;
+        }
+        .gauge-bg { border-color: #374151; }
+        .gauge-fill {
+            clip: rect(0, 150px, 75px, 0);
+            transform: rotate(0deg);
+            transition: transform 0.5s ease-in-out;
+            border-color: #02B2FC;
+        }
+        .gauge-value {
+            position: absolute; bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.875rem; font-weight: 700; color: white;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #374151;
+            border-radius: 9999px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            border: 2px solid #6366f1;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl space-y-8">
+        <div class="control-card">
+            <h1 class="text-3xl font-bold text-white">Your Condition</h1>
+            <p class="text-slate-400">An overview of your readiness, based on training and recovery.</p>
+        </div>
+
+        <div class="control-card">
+            <h2 class="text-xl font-semibold text-white mb-2">Daily Check-in</h2>
+            <p class="text-sm text-slate-400 mb-6">Log your recovery factors to get a more accurate readiness score. This data will adjust how your fatigue is calculated.</p>
+            <div class="space-y-4">
+                <div>
+                    <label class="flex justify-between font-medium text-slate-300"><span>Sleep Quality</span><span id="sleep-value" class="text-action-blue">3 / 5</span></label>
+                    <input type="range" id="sleep-slider" min="1" max="5" value="3" class="w-full mt-1">
+                </div>
+                <div>
+                    <label class="flex justify-between font-medium text-slate-300"><span>Stress Level</span><span id="stress-value" class="text-action-blue">3 / 5</span></label>
+                    <input type="range" id="stress-slider" min="1" max="5" value="3" class="w-full mt-1">
+                </div>
+                <div>
+                    <label class="flex justify-between font-medium text-slate-300"><span>Nutrition</span><span id="nutrition-value" class="text-action-blue">3 / 5</span></label>
+                    <input type="range" id="nutrition-slider" min="1" max="5" value="3" class="w-full mt-1">
+                </div>
+                <div>
+                    <label for="rhr-input" class="font-medium text-slate-300">Resting Heart Rate (RHR) <span class="text-xs text-slate-500">(Optional)</span></label>
+                    <input type="number" id="rhr-input" placeholder="e.g., 55" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 mt-1">
+                </div>
+            </div>
+            <button id="save-checkin-btn" class="w-full mt-6 bg-action-blue hover:bg-action-blue-hover text-white font-bold py-3 px-4 rounded-lg text-lg transition">Save Today's Check-in</button>
+        </div>
+
+        <div class="control-card">
+            <h2 class="text-xl font-semibold text-white mb-4">Recovery Trends</h2>
+            <canvas id="checkin-history-chart" style="max-height: 250px;"></canvas>
+            <p id="checkin-history-status" class="mt-4 text-center text-slate-400">Your logged sleep, stress, and nutrition over the last 42 days.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="control-card flex flex-col items-center justify-center">
+                <h2 class="text-xl font-semibold text-white mb-4">Performance Readiness (Form)</h2>
+                <div class="gauge-container">
+                    <div class="gauge-bg"></div>
+                    <div id="readiness-gauge-fill" class="gauge-fill"></div>
+                    <div id="readiness-gauge-value" class="gauge-value">+0</div>
+                </div>
+                <p id="form-status" class="mt-4 text-center font-medium"></p>
+            </div>
+            <div class="control-card">
+                <h2 class="text-xl font-semibold text-white mb-4">Fitness & Fatigue Scores</h2>
+                <div id="fitness-fatigue-container" class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-1"><span class="text-slate-400">Fitness (Chronic Load)</span><span id="fitness-score" class="font-bold text-white">0</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2.5"><div id="fitness-bar" class="bg-accent-blue h-2.5 rounded-full" style="width: 0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1"><span class="text-slate-400">Fatigue (Acute Load)</span><span id="fatigue-score" class="font-bold text-white">0</span></div>
+                        <div class="w-full bg-slate-700 rounded-full h-2.5"><div id="fatigue-bar" class="bg-rose-500 h-2.5 rounded-full" style="width: 0%"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-card">
+            <h2 class="text-xl font-semibold text-white mb-4">Performance Trends (Fitness vs. Fatigue)</h2>
+            <canvas id="performance-trends-chart" style="max-height: 250px;"></canvas>
+            <p id="performance-trends-status" class="mt-4 text-center text-slate-400"></p>
+        </div>
+
+        <div class="control-card">
+            <h2 class="text-xl font-semibold text-white mb-4">Acute:Chronic Workload Ratio (EWMA)</h2>
+            <canvas id="acwr-chart" style="max-height: 250px;"></canvas>
+            <p id="acwr-status" class="mt-4 text-center text-slate-400"></p>
+        </div>
+        
+        <div class="control-card">
+            <h2 class="text-xl font-semibold text-white mb-4">Muscle Group Readiness</h2>
+            <p class="text-sm text-slate-400 mb-6">This chart shows your current fatigue (top bar, colored by risk) relative to your established fitness base (bottom bar) for each muscle. When the top bar is shorter than the bottom bar, the muscle is considered fresh and ready for high performance.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6" id="muscle-fatigue-container">
+                </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script type="module" src="/js/condition-page.js"></script>
+
+</body>
+</html>

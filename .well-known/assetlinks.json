@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.strivusai.twa",
+        "sha256_cert_fingerprints": ["2F:1C:3F:7B:EB:2A:5F:4F:0D:FA:ED:1C:D4:B7:5E:8F:69:91:D9:4B:0A:85:BA:04:5E:36:C7:69:2D:68:FB:BF"]
+      }
+    }]

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strivus - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'action-blue': '#02B2FC',
+                        'action-blue-hover': '#0298d6',
+                        'accent-blue': '#0235FC',
+                        'accent-teal': '#02FCC9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .auth-card { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 1rem; padding: 2rem; max-width: 28rem; width: 100%; }
+        .input-field { background-color: #374151; border: 1px solid #4b5563; border-radius: 0.5rem; padding: 0.75rem; color: #e5e7eb; width: 100%; }
+        .input-field:focus { outline: none; border-color: #02B2FC; }
+        .btn-primary { background-color: #02B2FC; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; width: 100%; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: #0298d6; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .error-message { background-color: #7f1d1d; border: 1px solid #991b1b; color: #fecaca; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+        .success-message { background-color: #14532d; border: 1px solid #166534; color: #bbf7d0; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300 flex items-center justify-center min-h-screen p-4">
+
+    <div class="auth-card">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Strivus</h1>
+            <p class="text-slate-400">Evolve your optimal workout</p>
+        </div>
+
+        <div id="error-container"></div>
+        <div id="success-container"></div>
+
+        <div id="login-form">
+            <h2 class="text-2xl font-bold text-white mb-6">Sign In</h2>
+            <form id="login-form-element" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                    <input type="email" id="login-email" class="input-field" placeholder="your@email.com" required>
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                    <input type="password" id="login-password" class="input-field" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="login-btn" class="btn-primary">Sign In</button>
+            </form>
+            <p class="text-center mt-4 text-sm text-slate-400">
+                Don't have an account?
+                <button id="show-signup" class="text-action-blue hover:underline font-medium">Sign Up</button>
+            </p>
+        </div>
+
+        <div id="signup-form" class="hidden">
+            <h2 class="text-2xl font-bold text-white mb-6">Create Account</h2>
+            <form id="signup-form-element" class="space-y-4">
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                    <input type="email" id="signup-email" class="input-field" placeholder="your@email.com" required>
+                </div>
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                    <input type="password" id="signup-password" class="input-field" placeholder="••••••••" required minlength="6">
+                    <p class="text-xs text-slate-500 mt-1">Minimum 6 characters</p>
+                </div>
+                <div>
+                    <label for="signup-display-name" class="block text-sm font-medium text-slate-300 mb-2">Display Name (Optional)</label>
+                    <input type="text" id="signup-display-name" class="input-field" placeholder="John Doe">
+                </div>
+                <button type="submit" id="signup-btn" class="btn-primary">Create Account</button>
+            </form>
+            <p class="text-center mt-4 text-sm text-slate-400">
+                Already have an account?
+                <button id="show-login" class="text-action-blue hover:underline font-medium">Sign In</button>
+            </p>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script type="module">
+        import { supabase } from './js/supabase-client.js';
+
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const errorContainer = document.getElementById('error-container');
+        const successContainer = document.getElementById('success-container');
+
+        function showError(message) {
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            successContainer.innerHTML = '';
+        }
+
+        function showSuccess(message) {
+            successContainer.innerHTML = `<div class="success-message">${message}</div>`;
+            errorContainer.innerHTML = '';
+        }
+
+        function clearMessages() {
+            errorContainer.innerHTML = '';
+            successContainer.innerHTML = '';
+        }
+
+        document.getElementById('show-signup').addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+            clearMessages();
+        });
+
+        document.getElementById('show-login').addEventListener('click', () => {
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            clearMessages();
+        });
+
+        document.getElementById('login-form-element').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+
+            } catch (error) {
+                showError(error.message || 'Login failed. Please try again.');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            }
+        });
+
+        document.getElementById('signup-form-element').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const displayName = document.getElementById('signup-display-name').value;
+            const signupBtn = document.getElementById('signup-btn');
+
+            signupBtn.disabled = true;
+            signupBtn.textContent = 'Creating account...';
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            display_name: displayName
+                        }
+                    }
+                });
+
+                if (error) throw error;
+
+                const { error: profileError } = await supabase
+                    .from('user_profiles')
+                    .insert([
+                        { id: data.user.id, display_name: displayName }
+                    ]);
+
+                if (profileError) console.error('Profile creation error:', profileError);
+
+                showSuccess('Account created successfully! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+
+            } catch (error) {
+                showError(error.message || 'Signup failed. Please try again.');
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Create Account';
+            }
+        });
+
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = '/';
+            }
+        })();
+    </script>
+
+</body>
+</html>

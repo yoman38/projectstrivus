@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strivus - Record Training</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'action-blue': '#02B2FC',
+                        'action-blue-hover': '#0298d6',
+                        'accent-blue': '#0235FC',
+                        'accent-teal': '#02FCC9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .control-card { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 1rem; padding: 1.5rem; }
+        .input-field { background-color: #374151; border: 1px solid #4b5563; border-radius: 0.5rem; padding: 0.5rem 0.75rem; color: #e5e7eb; }
+        .input-field:focus { outline: none; border-color: #02B2FC; ring: 2px; ring-color: #02B2FC; }
+        .btn-primary { background-color: #02B2FC; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.2s; }
+        .btn-primary:hover { background-color: #0298d6; }
+        .btn-secondary { background-color: #4b5563; color: #d1d5db; font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s; }
+        .btn-secondary:hover { background-color: #6b7280; }
+        .btn-danger { background-color: #be123c; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+        #exercise-modal-overlay { transition: opacity 0.3s ease; }
+        #exercise-modal { transition: transform 0.3s ease, opacity 0.3s ease; }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-300">
+
+    <div id="exercise-modal-overlay" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div id="exercise-modal" class="bg-slate-800 rounded-xl max-w-lg w-full p-6 space-y-4">
+            <h2 class="text-2xl font-bold text-white">Select Exercise</h2>
+            <input type="text" id="exercise-search" class="input-field w-full" placeholder="Search for an exercise...">
+            <div id="exercise-list" class="max-h-80 overflow-y-auto space-y-2">
+            </div>
+            <button id="close-modal-btn" class="w-full btn-secondary mt-2">Cancel</button>
+        </div>
+    </div>
+    
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl space-y-8">
+        <div class="control-card flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Record a New Workout</h1>
+                <p class="text-slate-400">Log your session to track progress.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                 <input type="date" id="workout-date" class="input-field">
+                 <button id="save-workout-btn" class="btn-primary">Save Workout</button>
+            </div>
+        </div>
+
+        <div id="workout-log-container" class="space-y-6">
+            </div>
+
+        <div class="control-card">
+            <div class="flex justify-between items-center mb-4">
+                <label for="activity-type" class="block font-medium">Add Activity</label>
+                <div class="flex gap-3">
+                    <a href="/custom-exercise.html" class="text-accent-teal text-sm hover:text-accent-teal/80 transition">
+                        + Create Custom Exercise
+                    </a>
+                    <a href="/manage-exercises.html" class="text-action-blue text-sm hover:text-action-blue-hover transition">
+                        ⚙️ Manage
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <select id="activity-type" class="input-field flex-grow">
+                    </select>
+                <button id="add-activity-btn" class="btn-primary">
+                    <span class="text-lg">+</span> Add
+                </button>
+            </div>
+        </div>
+        
+        <div class="control-card">
+            <h2 class="text-2xl font-bold text-white mb-4">Session Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="intensity-slider" class="block mb-2 font-medium">Intensity (RPE): <span id="intensity-value" class="text-action-blue font-bold">5</span> / 10</label>
+                    <input type="range" id="intensity-slider" min="1" max="10" value="5" class="w-full">
+                </div>
+                <div>
+                    <label for="workout-duration" class="block mb-2 font-medium">Total Duration (minutes)</label>
+                    <input type="number" id="workout-duration" class="input-field w-full" placeholder="Auto-calculated from activities">
+                    <p class="text-xs text-slate-400 mt-1">Automatically calculated from sport activities. Edit to adjust.</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="workout-notes" class="block mb-2 font-medium">Notes</label>
+                    <textarea id="workout-notes" rows="3" class="input-field w-full" placeholder="How did the session feel? Any PRs?"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <template id="exercise-card-template">
+        <div class="control-card" data-exercise-id="">
+            <div class="flex justify-between items-start">
+                <h3 class="text-xl font-bold text-action-blue mb-3 exercise-name">Exercise Name</h3>
+                <button class="btn-danger remove-card-btn" title="Remove Exercise">&times;</button>
+            </div>
+            
+            <div class="pr-display bg-slate-800/50 p-3 rounded-lg mb-4 text-xs space-y-2">
+                <p class="text-slate-400 font-semibold border-b border-slate-600 pb-1 mb-1">Personal Records</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
+                    </div>
+            </div>
+
+            <div class="performance-graph-container mb-4">
+                <h4 class="text-sm font-semibold text-slate-300 mb-2">Recent Performance Trend</h4>
+                <canvas class="performance-graph" style="max-height: 150px;"></canvas>
+            </div>
+
+            <details class="exercise-details-container mt-4">
+                <summary class="text-slate-400 cursor-pointer hover:text-action-blue">Show Details & Video</summary>
+                <div class="pt-4 border-t border-slate-700/50 mt-2 space-y-4">
+                    <div class="how-to-perform-section hidden">
+                        <h5 class="font-semibold text-slate-200">How to Perform:</h5>
+                        <p class="text-sm text-slate-400 whitespace-pre-wrap how-to-perform-text"></p>
+                    </div>
+                    <div class="common-errors-section hidden">
+                        <h5 class="font-semibold text-slate-200">Common Errors:</h5>
+                        <p class="text-sm text-slate-400 whitespace-pre-wrap common-errors-text"></p>
+                    </div>
+                    <div class="video-section hidden">
+                        <iframe class="w-full aspect-video rounded-md" src="" width="100%" height="315" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </details>
+
+            <div class="sets-container space-y-2 mt-4 pt-4 border-t border-slate-700/50">
+                </div>
+            <button class="btn-secondary w-full mt-4 add-set-btn">+ Add Set</button>
+        </div>
+    </template>
+    
+    <template id="sport-session-template">
+        <div class="control-card" data-activity-name="">
+            <div class="flex justify-between items-start">
+                 <h3 class="text-xl font-bold text-action-blue mb-3 activity-name">Sport Session</h3>
+                 <button class="btn-danger remove-card-btn" title="Remove Activity">&times;</button>
+            </div>
+             <label class="block text-sm font-medium text-slate-400 mb-2">Duration (minutes)</label>
+             <input type="number" class="input-field w-full duration-input" placeholder="e.g., 45">
+        </div>
+    </template>
+
+    <template id="set-row-template">
+        <div class="flex items-center gap-3 set-row">
+            <span class="font-mono text-slate-500 set-number w-6 text-center">1</span>
+            <input type="number" class="input-field w-full reps-input" placeholder="Reps">
+            <input type="number" class="hidden input-field w-full time-input" placeholder="Seconds">
+            <span class="text-slate-500">&times;</span>
+            <input type="number" class="input-field w-full weight-input" placeholder="Weight">
+            <span class="text-slate-500">kg</span>
+            <button class="btn-danger delete-set-btn" title="Remove Set">&times;</button>
+        </div>
+    </template>
+
+    <script src="/js/config.js"></script>
+    <script type="module" src="/js/record-page.js"></script>
+
+</body>
+</html>

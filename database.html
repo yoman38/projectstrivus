@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .table-auto th, .table-auto td { padding: 0.75rem 1rem; border-bottom: 1px solid #374151; text-align: left; font-size: 0.875rem; }
+        .table-auto th { background-color: #374151; font-weight: 600; color: #d1d5db; }
+        .table-auto tbody tr:hover { background-color: #1f2937; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #02B2FC; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto max-w-7xl space-y-8">
+        <div class="control-card">
+            <h1 class="text-3xl font-bold text-white">Add New Exercise with AI</h1>
+            <p class="text-slate-400 mb-6">Provide the basic details, and the AI will generate the complete database entry.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" id="new-exercise-name" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2" placeholder="Exercise Name">
+                <input type="url" id="new-youtube-url" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2" placeholder="YouTube URL">
+                <input type="text" id="new-materials" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2" placeholder="Materials">
+            </div>
+            <textarea id="ai-json-output" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 h-48 mt-4 hidden" placeholder="AI output will appear here..."></textarea>
+            <button id="generate-exercise-btn" class="w-full bg-action-blue hover:bg-action-blue-hover text-white font-bold py-3 px-4 rounded-lg text-lg transition mt-4 flex items-center justify-center gap-2">
+                <span id="generate-btn-text">Generate with AI</span>
+                <div id="generate-loader" class="loader hidden"></div>
+            </button>
+            <button id="add-to-database-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg transition mt-4 hidden">Add to Database</button>
+        </div>
+
+        <div class="control-card">
+            <div class="flex flex-wrap justify-between items-center">
+                <h2 class="text-2xl font-bold text-white">Exercise Database</h2>
+                <input type="text" id="db-search-input" class="w-full md:w-1/3 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2" placeholder="Search database...">
+            </div>
+            <div class="overflow-x-auto mt-4">
+                <table class="table-auto w-full text-left">
+                    <thead>
+                        <tr><th>ID</th><th>Name</th><th>Category</th><th>Difficulty</th><th>Materials</th></tr>
+                    </thead>
+                    <tbody id="database-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    (() => {
+        const getExercises = () => window.ALL_EXERCISES || [];
+        
+        const populateTable = (filter = '') => {
+            const exercises = getExercises();
+            const tableBody = document.getElementById('database-table-body');
+            if (!tableBody) return;
+            const searchTerm = filter.toLowerCase();
+            tableBody.innerHTML = exercises
+                .filter(ex => ex.Exercise_Name.toLowerCase().includes(searchTerm))
+                .map(ex => `<tr><td>${ex.id}</td><td>${ex.Exercise_Name}</td><td>${ex.category || 'N/A'}</td><td>${ex.difficulty}</td><td>${[ex.Material_1, ex.Material_2, ex.Material_3].filter(Boolean).join(', ') || 'Bodyweight'}</td></tr>`)
+                .join('');
+        };
+        
+        document.getElementById('db-search-input').addEventListener('input', (e) => populateTable(e.target.value));
+
+        document.getElementById('generate-exercise-btn').addEventListener('click', async () => {
+            const exerciseName = document.getElementById('new-exercise-name').value;
+            const youtubeUrl = document.getElementById('new-youtube-url').value;
+            const materials = document.getElementById('new-materials').value;
+
+            if (!exerciseName || !youtubeUrl || !materials) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            const btn = document.getElementById('generate-exercise-btn');
+            const btnText = document.getElementById('generate-btn-text');
+            const loader = document.getElementById('generate-loader');
+            const outputArea = document.getElementById('ai-json-output');
+            const addBtn = document.getElementById('add-to-database-btn');
+
+            btn.disabled = true;
+            btnText.textContent = 'Generating...';
+            loader.classList.remove('hidden');
+            outputArea.classList.add('hidden');
+            addBtn.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/generate-exercise', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ exerciseName, youtubeUrl, materials })
+                });
+                
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An unknown error occurred.');
+                }
+                
+                const formattedJson = JSON.stringify(JSON.parse(data.exerciseJson), null, 2);
+                outputArea.value = formattedJson;
+                outputArea.classList.remove('hidden');
+                addBtn.classList.remove('hidden');
+
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Generate with AI';
+                loader.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('add-to-database-btn').addEventListener('click', async () => {
+            const jsonInput = document.getElementById('ai-json-output').value;
+            if (!jsonInput) return;
+
+            try {
+                const newExercise = JSON.parse(jsonInput);
+                const response = await fetch('/api/add-exercise', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newExercise)
+                });
+                
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message);
+
+                // Add to global state for immediate UI update
+                window.ALL_EXERCISES.push(result.newExercise);
+
+                alert(`Exercise "${result.newExercise.Exercise_Name}" added!`);
+                populateTable();
+
+                // Reset form
+                document.getElementById('new-exercise-name').value = '';
+                document.getElementById('new-youtube-url').value = '';
+                document.getElementById('new-materials').value = '';
+                document.getElementById('ai-json-output').classList.add('hidden');
+                document.getElementById('add-to-database-btn').classList.add('hidden');
+
+            } catch (error) {
+                alert(`Failed to add exercise: ${error.message}`);
+            }
+        });
+
+        populateTable();
+    })();
+</script>
+</body>
+</html>

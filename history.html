@@ -1,0 +1,104 @@
+<div id="history-dashboard">
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-white mb-2">Training History & Analytics</h2>
+        <p class="text-slate-400">Track your progress, analyze patterns, and visualize your training journey.</p>
+    </div>
+
+    <div id="history-loading" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-slate-800 border border-slate-600 rounded-xl p-8 text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-action-blue mx-auto mb-4"></div>
+            <p class="text-white text-lg font-semibold">Loading your training history...</p>
+        </div>
+    </div>
+
+    <div id="history-error" class="hidden mb-6 bg-red-900/20 border border-red-500 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+            <span class="text-red-500 text-xl">⚠️</span>
+            <div class="flex-1">
+                <h3 class="text-red-400 font-semibold mb-1">Error Loading History</h3>
+                <p id="history-error-message" class="text-red-300 text-sm"></p>
+                <button id="history-retry-btn" class="mt-3 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-lg transition text-sm">
+                    Retry
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div class="control-card lg:col-span-2">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-white">Activity Calendar</h3>
+                    <p class="text-sm text-slate-400 mt-1">90-day workout heatmap</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="calendar-prev-month" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors">
+                        <span>←</span>
+                    </button>
+                    <span id="calendar-month-label" class="text-white font-semibold min-w-[120px] text-center"></span>
+                    <button id="calendar-next-month" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors">
+                        <span>→</span>
+                    </button>
+                </div>
+            </div>
+            <div id="calendar-heatmap"></div>
+        </div>
+
+        <div class="control-card">
+            <h3 class="text-2xl font-bold text-white mb-4">Weekly Activity</h3>
+            <div id="weekly-breakdown"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="control-card">
+            <h3 class="text-2xl font-bold text-white mb-4">Training Distribution</h3>
+            <div id="training-distribution"></div>
+        </div>
+
+        <div class="control-card">
+            <h3 class="text-2xl font-bold text-white mb-4">Top Exercises</h3>
+            <p class="text-sm text-slate-400 -mt-2 mb-4">Most frequently performed exercises</p>
+            <div id="top-exercises"></div>
+        </div>
+    </div>
+
+    <div class="control-card mb-8">
+        <h3 class="text-2xl font-bold text-white mb-4">Recent Workouts</h3>
+        <p class="text-sm text-slate-400 -mt-2 mb-4">Last 15 training sessions</p>
+        <div id="recent-workouts"></div>
+    </div>
+
+    <div class="control-card">
+        <h3 class="text-2xl font-bold text-white mb-4">Personal Records Progression</h3>
+        <p class="text-sm text-slate-400 -mt-2 mb-4">Track your strength improvements over time</p>
+        <div id="pr-progression"></div>
+    </div>
+</div>
+
+<script type="module">
+    // Ensure Supabase config is loaded before initializing
+    if (!window.SUPABASE_CONFIG) {
+        console.error('SUPABASE_CONFIG not found - waiting for config to load');
+        // Wait for config to be available
+        await new Promise((resolve) => {
+            const checkConfig = setInterval(() => {
+                if (window.SUPABASE_CONFIG) {
+                    clearInterval(checkConfig);
+                    resolve();
+                }
+            }, 50);
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkConfig);
+                resolve();
+            }, 5000);
+        });
+    }
+
+    import { initializeHistoryPage } from './js/history-page.js';
+    initializeHistoryPage();
+</script>

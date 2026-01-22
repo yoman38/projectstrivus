@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strivus - Manage Custom Exercises</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'action-blue': '#02B2FC',
+                        'action-blue-hover': '#0298d6',
+                        'accent-blue': '#0235FC',
+                        'accent-teal': '#02FCC9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .control-card { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 1rem; padding: 1.5rem; }
+        .exercise-card { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 0.75rem; padding: 1rem; transition: all 0.2s; }
+        .exercise-card:hover { border-color: #02B2FC; transform: translateY(-2px); }
+        .exercise-card.selected { border-color: #02FCC9; background-color: #1e3a3a; }
+        .btn-primary { background-color: #02B2FC; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; border: none; }
+        .btn-primary:hover:not(:disabled) { background-color: #0298d6; }
+        .btn-primary:disabled { background-color: #4b5563; cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { background-color: #4b5563; color: #d1d5db; font-weight: 500; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; border: none; }
+        .btn-secondary:hover:not(:disabled) { background-color: #6b7280; }
+        .btn-danger { background-color: #dc2626; color: white; font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s; cursor: pointer; border: none; }
+        .btn-danger:hover:not(:disabled) { background-color: #b91c1c; }
+        .btn-small { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .badge-usage { background-color: #1e3a8a; color: #93c5fd; }
+        .badge-difficulty { background-color: #713f12; color: #fde047; }
+        .empty-state { text-align: center; padding: 3rem 1rem; }
+        .muscle-mini-bar { display: flex; gap: 2px; height: 4px; margin-top: 0.5rem; }
+        .muscle-mini-segment { background-color: #02B2FC; border-radius: 1px; transition: opacity 0.3s; }
+        .search-input { background-color: #374151; border: 1px solid #4b5563; border-radius: 0.5rem; padding: 0.5rem 1rem; color: #e5e7eb; width: 100%; }
+        .search-input:focus { outline: none; border-color: #02B2FC; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.75); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: #1f2937; border: 1px solid #4b5563; border-radius: 1rem; padding: 2rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .checkbox-custom { width: 1.25rem; height: 1.25rem; cursor: pointer; }
+        .loading-spinner { border: 3px solid #4b5563; border-top-color: #02B2FC; border-radius: 50%; width: 2rem; height: 2rem; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .stat-card { background-color: #111827; padding: 1rem; border-radius: 0.5rem; border: 1px solid #374151; }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-300">
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <div class="control-card mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-white">Manage Custom Exercises</h1>
+                    <p class="text-slate-400">View, edit, and organize your custom exercises</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="back-btn" class="btn-secondary">← Back</button>
+                    <button id="create-new-btn" class="btn-primary">+ Create New</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="stats-container">
+            <div class="stat-card">
+                <div class="text-slate-400 text-sm">Total Exercises</div>
+                <div class="text-2xl font-bold text-white" id="stat-total">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-slate-400 text-sm">Most Used</div>
+                <div class="text-xl font-bold text-accent-teal" id="stat-most-used">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-slate-400 text-sm">Total Workouts</div>
+                <div class="text-2xl font-bold text-white" id="stat-total-usage">0</div>
+            </div>
+        </div>
+
+        <div class="control-card mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <input type="text" id="search-input" class="search-input" placeholder="Search exercises...">
+                <select id="sort-select" class="search-input md:w-48">
+                    <option value="created_at">Newest First</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="usage_count">Most Used</option>
+                    <option value="difficulty">Difficulty</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="bulk-actions" class="control-card mb-6 hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-white font-semibold"><span id="selected-count">0</span> selected</span>
+                <div class="flex gap-2">
+                    <button id="deselect-all-btn" class="btn-secondary btn-small">Deselect All</button>
+                    <button id="bulk-delete-btn" class="btn-danger btn-small">Delete Selected</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-container" class="flex justify-center py-12">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <div id="exercises-container" class="space-y-3 hidden"></div>
+
+        <div id="empty-state" class="control-card empty-state hidden">
+            <div class="text-6xl mb-4">💪</div>
+            <h2 class="text-2xl font-bold text-white mb-2">No Custom Exercises Yet</h2>
+            <p class="text-slate-400 mb-6">Create your first custom exercise to get started</p>
+            <button class="btn-primary">+ Create Your First Exercise</button>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-white mb-4">Confirm Delete</h2>
+            <p class="text-slate-300 mb-6">Are you sure you want to delete "<span id="delete-exercise-name" class="font-semibold text-accent-teal"></span>"? This action cannot be undone.</p>
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-delete-btn" class="btn-secondary">Cancel</button>
+                <button id="confirm-delete-btn" class="btn-danger">Delete Exercise</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script type="module" src="/js/manage-exercises-page.js"></script>
+</body>
+</html>
