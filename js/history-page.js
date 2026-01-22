@@ -39,6 +39,83 @@ export async function initializeHistoryPage() {
     }
 
     setupRetryButton();
+    setupRefreshButton();
+    setupPullToRefresh();
+}
+
+function setupRefreshButton() {
+    const refreshBtn = document.getElementById('history-refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            const refreshText = document.getElementById('refresh-text');
+            const originalText = refreshText.textContent;
+
+            refreshBtn.disabled = true;
+            refreshText.textContent = 'Refreshing...';
+
+            try {
+                await fetchAllHistoryData();
+                renderAllComponents();
+                refreshText.textContent = 'Refreshed!';
+
+                setTimeout(() => {
+                    refreshBtn.disabled = false;
+                    refreshText.textContent = originalText;
+                }, 2000);
+            } catch (error) {
+                console.error('Error refreshing history:', error);
+                refreshText.textContent = 'Error!';
+                refreshBtn.disabled = false;
+
+                setTimeout(() => {
+                    refreshText.textContent = originalText;
+                }, 3000);
+            }
+        });
+    }
+}
+
+function setupPullToRefresh() {
+    let touchStartY = 0;
+    let isDragging = false;
+
+    document.addEventListener('touchstart', (e) => {
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        if (scrollTop === 0) {
+            touchStartY = e.touches[0].clientY;
+        }
+    }, false);
+
+    document.addEventListener('touchmove', (e) => {
+        if (window.scrollY === 0 && e.touches[0].clientY > touchStartY + 50) {
+            isDragging = true;
+            const historyDashboard = document.getElementById('history-dashboard');
+            if (historyDashboard) {
+                historyDashboard.style.transform = `translateY(${e.touches[0].clientY - touchStartY}px)`;
+            }
+        }
+    }, false);
+
+    document.addEventListener('touchend', async (e) => {
+        if (isDragging && e.changedTouches[0].clientY - touchStartY > 100) {
+            const historyDashboard = document.getElementById('history-dashboard');
+            if (historyDashboard) {
+                historyDashboard.style.transform = '';
+            }
+
+            const refreshBtn = document.getElementById('history-refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.click();
+            }
+        } else {
+            const historyDashboard = document.getElementById('history-dashboard');
+            if (historyDashboard) {
+                historyDashboard.style.transform = '';
+            }
+        }
+        isDragging = false;
+        touchStartY = 0;
+    }, false);
 }
 
 async function loadExerciseDatabase() {
@@ -85,7 +162,7 @@ async function fetchAllHistoryData() {
             .from('user_exercise_prs')
             .select('*')
             .eq('user_id', user.id)
-            .order('achieved_at', { ascending: false })
+            .order('last_performed', { ascending: false })
     ]);
 
     if (workoutsResult.error) throw workoutsResult.error;
@@ -629,7 +706,7 @@ function renderPRProgression() {
 
     Object.keys(prsByExercise).forEach(exId => {
         prsByExercise[exId].sort((a, b) =>
-            new Date(a.achieved_at) - new Date(b.achieved_at)
+            new Date(a.last_performed) - new Date(b.last_performed)
         );
     });
 
@@ -659,8 +736,8 @@ function renderPRProgression() {
                         <div class="space-y-1">
                             ${prs.slice(-3).reverse().map((pr, i) => `
                                 <div class="flex justify-between text-xs ${i === 0 ? 'text-white font-semibold' : 'text-slate-400'}">
-                                    <span>${formatDate(pr.achieved_at)}</span>
-                                    <span>${pr.max_weight}kg × ${pr.reps_at_max} reps</span>
+                                    <span>${formatDate(pr.last_performed)}</span>
+                                    <span>${pr.max_weight}kg × ${pr.max_reps} reps</span>
                                 </div>
                             `).join('')}
                         </div>

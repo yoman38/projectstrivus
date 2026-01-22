@@ -46,6 +46,38 @@ function initializePage() {
     }
 
     document.getElementById('save-checkin-btn')?.addEventListener('click', handleSaveCheckIn);
+    setupConditionRefreshButton();
+}
+
+function setupConditionRefreshButton() {
+    const refreshBtn = document.getElementById('condition-refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            const refreshText = document.getElementById('condition-refresh-text');
+            const originalText = refreshText.textContent;
+
+            refreshBtn.disabled = true;
+            refreshText.textContent = 'Refreshing...';
+
+            try {
+                await loadData();
+                refreshText.textContent = 'Refreshed!';
+
+                setTimeout(() => {
+                    refreshBtn.disabled = false;
+                    refreshText.textContent = originalText;
+                }, 2000);
+            } catch (error) {
+                console.error('Error refreshing condition data:', error);
+                refreshText.textContent = 'Error!';
+                refreshBtn.disabled = false;
+
+                setTimeout(() => {
+                    refreshText.textContent = originalText;
+                }, 3000);
+            }
+        });
+    }
 }
 
 async function handleSaveCheckIn() {

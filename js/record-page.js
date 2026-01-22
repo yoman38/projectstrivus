@@ -164,7 +164,10 @@ function closeExerciseModal() {
 
 async function addExercise(exerciseId) {
     const parsedId = typeof exerciseId === 'string' ? exerciseId : exerciseId.toString();
-    const exercise = ALL_EXERCISES.find(ex => ex.id.toString() === parsedId);
+    const exercise = ALL_EXERCISES.find(ex => {
+      const exId = typeof ex.id === 'number' ? ex.id.toString() : ex.id;
+      return exId === parsedId;
+    });
     if (!exercise) return;
 
     const template = document.getElementById('exercise-card-template');
@@ -172,6 +175,7 @@ async function addExercise(exerciseId) {
     const card = clone.querySelector('.control-card');
 
     card.dataset.exerciseId = parsedId;
+    card.dataset.exerciseId_actual = exercise.id;
     card.dataset.isCustom = exercise.is_custom ? 'true' : 'false';
     card.querySelector('.exercise-name').textContent = exercise.Exercise_Name;
 
@@ -284,7 +288,8 @@ async function handleSaveWorkout() {
 
         const exercises = [];
         document.querySelectorAll('#workout-log-container .control-card[data-exercise-id]').forEach(card => {
-            const exerciseId = parseInt(card.dataset.exerciseId);
+            const exerciseId = card.dataset.exerciseId_actual || card.dataset.exerciseId;
+            const parsedExerciseId = isNaN(exerciseId) ? exerciseId : parseInt(exerciseId);
             const exerciseName = card.querySelector('.exercise-name').textContent;
             const isTimeBased = card.querySelector('.sets-container').dataset.isTimeBased === 'true';
 
@@ -305,7 +310,7 @@ async function handleSaveWorkout() {
 
             if (sets.length > 0) {
                 exercises.push({
-                    exercise_id: exerciseId,
+                    exercise_id: parsedExerciseId,
                     exercise_name: exerciseName,
                     sets_data: sets
                 });
