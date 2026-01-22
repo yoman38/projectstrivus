@@ -5,7 +5,12 @@ let recordData = {
     activityType: 'strength',
     exercises: [],
     rpe: 5,
-    notes: ''
+    notes: '',
+    duration: 45,
+    trainingType: '',
+    equipment: '',
+    persona: '',
+    focusArea: { upper: 50, lower: 50, core: 30 }
 };
 
 let checkInData = {
@@ -41,6 +46,12 @@ function switchTab(tabName) {
 
     if (window.swipeNav) {
         window.swipeNav.syncCurrentTab(tabName);
+    }
+
+    if (window.aiCharacter) {
+        window.dispatchEvent(new CustomEvent('aiEvent', {
+            detail: { event: 'tab-switched', data: { tab: tabName } }
+        }));
     }
 
     if (tabName === 'record') {
@@ -167,41 +178,190 @@ function switchHistorySubtab(subtabName) {
     }
 
     document.querySelector(`[data-subtab="${subtabName}"]`)?.classList.add('active');
+
+    if (subtabName === 'prs') {
+        loadPRs();
+    } else if (subtabName === 'analytics') {
+        loadAnalytics();
+    } else if (subtabName === 'trends') {
+        loadMuscleGroupAnalysis();
+    }
+}
+
+function switchConditionSubtab(subtabName) {
+    const subtabs = document.querySelectorAll('.condition-subtab');
+    const buttons = document.querySelectorAll('[data-subtab]');
+
+    subtabs.forEach(subtab => {
+        subtab.style.display = 'none';
+        subtab.classList.remove('active');
+    });
+
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    const selectedSubtab = document.getElementById(`condition${subtabName.charAt(0).toUpperCase() + subtabName.slice(1)}`);
+    if (selectedSubtab) {
+        selectedSubtab.style.display = 'block';
+        selectedSubtab.classList.add('active');
+    }
+
+    if (subtabName === 'history') {
+        loadCheckInHistory();
+    } else if (subtabName === 'trends') {
+        loadReadinessTrends();
+    }
+
+    document.querySelector(`[data-subtab="${subtabName}"]`)?.classList.add('active');
+}
+
+function loadCheckInHistory() {
+    const checkIns = JSON.parse(localStorage.getItem('strivusCheckIns') || '[]');
+    const container = document.getElementById('checkInHistory');
+
+    if (checkIns.length === 0) {
+        container.innerHTML = '<p class="text-tertiary">No check-ins yet. Start logging!</p>';
+        return;
+    }
+
+    const last7Days = checkIns.slice(-7).reverse();
+    container.innerHTML = last7Days.map(checkin => {
+        const average = (checkin.sleep + checkin.energy + checkin.soreness + checkin.mood) / 4;
+        const score = Math.round(average * 10);
+        return `
+            <div class="glass-card" style="margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <p><strong>${new Date(checkin.date).toLocaleDateString()}</strong></p>
+                        <p class="text-secondary">Sleep: ${['😴', '😐', '😊', '😄'][checkin.sleep - 1] || '?'} Energy: ${['⚡', '🔋', '💪', '🚀'][checkin.energy - 1] || '?'}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p class="text-tertiary">Score</p>
+                        <p style="font-size: 20px; font-weight: 700; color: var(--accent-cyan);">${score}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function loadReadinessTrends() {
+    const checkIns = JSON.parse(localStorage.getItem('strivusCheckIns') || '[]');
+
+    if (checkIns.length === 0) {
+        document.getElementById('readinessSummary').innerHTML = '<p class="text-tertiary">Not enough data yet. Keep logging!</p>';
+        return;
+    }
+
+    const scores = checkIns.map(c => Math.round(((c.sleep || 0) + (c.energy || 0) + (c.soreness || 0) + (c.mood || 0)) / 4 * 10));
+    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+
+    document.getElementById('readinessSummary').innerHTML = `
+        <p><strong>Average Readiness:</strong> ${avgScore}/40</p>
+        <p class="text-secondary" style="margin-top: 8px;">Highest: ${Math.max(...scores)} | Lowest: ${Math.min(...scores)}</p>
+    `;
 }
 
 function loadDashboard() {
-    const today = new Date().toISOString().split('T')[0];
-    const workouts = JSON.parse(localStorage.getItem('strivusWorkouts') || '[]');
-    const todayWorkouts = workouts.filter(w => w.date === today);
-
-    document.getElementById('dashTodayWorkouts').textContent = todayWorkouts.length;
-
-    const greatingMessages = [
-        "Time to shine!",
-        "Let's crush it!",
-        "You've got this!",
-        "Keep the momentum!",
-        "Stay strong!"
-    ];
-
-    const encouragements = [
-        "Your consistency is paying off",
-        "Every rep brings you closer to your goals",
-        "You're building something amazing",
-        "Your future self will thank you",
-        "This is where champions are made"
-    ];
-
-    const randomGreeting = greatingMessages[Math.floor(Math.random() * greatingMessages.length)];
-    const randomEncouragement = encouragements[Math.floor(Math.random() * encouragements.length)];
-
-    document.getElementById('dashboardGreeting').textContent = randomGreeting;
-    document.getElementById('dashboardMessage').textContent = randomEncouragement;
-
+    setupTrainingWizard();
+    loadReadinessScore();
     animateAICharacter();
 }
 
+function setupTrainingWizard() {
+    const trainingButtons = document.querySelectorAll('[data-training-type]');
+    const equipmentButtons = document.querySelectorAll('[data-equipment]');
+    const personaButtons = document.querySelectorAll('[data-persona]');
+
+    trainingButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            trainingButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            recordData.trainingType = btn.dataset.trainingType;
+            if (window.aiCharacter) {
+                window.aiCharacter.showMessage(`${btn.textContent}? Great choice!`, 3000, 'happy');
+            }
+        });
+    });
+
+    equipmentButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            equipmentButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            recordData.equipment = btn.dataset.equipment;
+        });
+    });
+
+    personaButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            personaButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            recordData.persona = btn.dataset.persona;
+        });
+    });
+
+    const upperSlider = document.getElementById('upperSlider');
+    const lowerSlider = document.getElementById('lowerSlider');
+    const coreSlider = document.getElementById('coreSlider');
+
+    if (upperSlider) {
+        upperSlider.addEventListener('input', (e) => {
+            document.getElementById('upperValue').textContent = e.target.value;
+            recordData.focusArea = {
+                upper: parseInt(e.target.value),
+                lower: parseInt(lowerSlider.value),
+                core: parseInt(coreSlider.value)
+            };
+        });
+    }
+
+    if (lowerSlider) {
+        lowerSlider.addEventListener('input', (e) => {
+            document.getElementById('lowerValue').textContent = e.target.value;
+            recordData.focusArea = {
+                upper: parseInt(upperSlider.value),
+                lower: parseInt(e.target.value),
+                core: parseInt(coreSlider.value)
+            };
+        });
+    }
+
+    if (coreSlider) {
+        coreSlider.addEventListener('input', (e) => {
+            document.getElementById('coreValue').textContent = e.target.value;
+            recordData.focusArea = {
+                upper: parseInt(upperSlider.value),
+                lower: parseInt(lowerSlider.value),
+                core: parseInt(e.target.value)
+            };
+        });
+    }
+}
+
+function loadReadinessScore() {
+    const today = new Date().toISOString().split('T')[0];
+    const checkIns = JSON.parse(localStorage.getItem('strivusCheckIns') || '[]');
+    const todayCheckIn = checkIns.find(c => c.date === today);
+
+    if (todayCheckIn) {
+        const average = (todayCheckIn.sleep + todayCheckIn.energy + todayCheckIn.soreness + todayCheckIn.mood) / 4;
+        const score = Math.round(average * 10);
+        document.getElementById('dashReadiness').textContent = score;
+
+        let statusText = '';
+        if (score >= 30) statusText = 'Excellent - Ready for intense training';
+        else if (score >= 20) statusText = 'Good - Ready for a solid workout';
+        else if (score >= 10) statusText = 'Fair - Take it easy today';
+        else statusText = 'Low - Focus on recovery';
+
+        document.getElementById('dashReadinessStatus').textContent = statusText;
+    }
+}
+
 function loadHistoryTab() {
+    loadRecentWorkouts();
+}
+
+function loadRecentWorkouts() {
     const workouts = JSON.parse(localStorage.getItem('strivusWorkouts') || '[]');
     const recentList = document.getElementById('recentWorkoutsList');
 
@@ -213,12 +373,108 @@ function loadHistoryTab() {
     const recent = workouts.slice(-10).reverse();
     recentList.innerHTML = recent.map(workout => `
         <div class="glass-card" style="margin-bottom: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
                 <div>
                     <p><strong>${new Date(workout.date).toLocaleDateString()}</strong></p>
-                    <p class="text-secondary">${workout.exercises.length} exercises</p>
+                    <p class="text-secondary">${workout.exercises.length} exercises • ${workout.duration || 45} min</p>
                 </div>
-                <p class="text-tertiary">RPE ${workout.intensity}</p>
+                <p style="color: var(--accent-cyan); font-weight: 600;">RPE ${workout.intensity}</p>
+            </div>
+            <p class="text-tertiary" style="font-size: 12px;">${workout.exercises.map(e => e.exerciseName).join(', ')}</p>
+        </div>
+    `).join('');
+}
+
+function loadPRs() {
+    const prs = JSON.parse(localStorage.getItem('strivusPRs') || '{}');
+    const prsList = document.getElementById('prsList');
+
+    if (Object.keys(prs).length === 0) {
+        prsList.innerHTML = '<p class="text-tertiary" style="grid-column: 1/-1;">No PRs recorded yet. Keep training!</p>';
+        return;
+    }
+
+    prsList.innerHTML = Object.entries(prs).map(([exerciseId, pr]) => {
+        const maxWeight = pr.strength?.weight || pr.oneRM?.value || 0;
+        return `
+            <div class="metric-card">
+                <div class="metric-label">PR</div>
+                <div class="metric-value" style="color: var(--accent-magenta);">${maxWeight}</div>
+                <p class="text-tertiary" style="font-size: 12px; margin-top: 8px;">lbs</p>
+            </div>
+        `;
+    }).join('');
+}
+
+function loadAnalytics() {
+    const workouts = JSON.parse(localStorage.getItem('strivusWorkouts') || '[]');
+    const analyticsList = document.getElementById('analyticsList');
+
+    if (workouts.length === 0) {
+        analyticsList.innerHTML = '<p class="text-tertiary" style="grid-column: 1/-1;">No data yet.</p>';
+        return;
+    }
+
+    const totalWorkouts = workouts.length;
+    const totalVolume = workouts.reduce((sum, w) => {
+        const sets = w.exercises.reduce((s, ex) => s + (ex.sets?.length || 0), 0);
+        return sum + sets;
+    }, 0);
+    const avgRPE = Math.round(workouts.reduce((sum, w) => sum + (w.intensity || 5), 0) / totalWorkouts);
+    const avgDuration = Math.round(workouts.reduce((sum, w) => sum + (w.duration || 45), 0) / totalWorkouts);
+
+    analyticsList.innerHTML = `
+        <div class="metric-card">
+            <div class="metric-label">Total</div>
+            <div class="metric-value">${totalWorkouts}</div>
+            <p class="text-tertiary" style="font-size: 12px; margin-top: 8px;">Workouts</p>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Volume</div>
+            <div class="metric-value">${totalVolume}</div>
+            <p class="text-tertiary" style="font-size: 12px; margin-top: 8px;">Sets</p>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Avg RPE</div>
+            <div class="metric-value">${avgRPE}</div>
+            <p class="text-tertiary" style="font-size: 12px; margin-top: 8px;">/10</p>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Avg Duration</div>
+            <div class="metric-value">${avgDuration}</div>
+            <p class="text-tertiary" style="font-size: 12px; margin-top: 8px;">min</p>
+        </div>
+    `;
+}
+
+function loadMuscleGroupAnalysis() {
+    const workouts = JSON.parse(localStorage.getItem('strivusWorkouts') || '[]');
+    const muscleGroups = {};
+
+    workouts.forEach(workout => {
+        workout.exercises.forEach(exercise => {
+            const muscle = exercise.muscleGroup || 'General';
+            if (!muscleGroups[muscle]) {
+                muscleGroups[muscle] = { count: 0, totalSets: 0 };
+            }
+            muscleGroups[muscle].count++;
+            muscleGroups[muscle].totalSets += exercise.sets?.length || 0;
+        });
+    });
+
+    const sorted = Object.entries(muscleGroups)
+        .sort((a, b) => b[1].count - a[1].count);
+
+    const summaryDiv = document.querySelector('#trendSummary') || document.createElement('div');
+    summaryDiv.className = 'glass-card';
+    summaryDiv.innerHTML = '<h3>Muscle Groups Worked</h3>' + sorted.map(([muscle, data]) => `
+        <div style="margin-top: 12px;">
+            <p class="text-secondary">${muscle}</p>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="flex: 1; height: 8px; background: var(--border-light); border-radius: 4px; overflow: hidden;">
+                    <div style="width: ${Math.min(100, (data.count / sorted[0][1].count) * 100)}%; height: 100%; background: linear-gradient(90deg, var(--accent-cyan) 0%, var(--accent-magenta) 100%);"></div>
+                </div>
+                <p class="text-tertiary">${data.count}x</p>
             </div>
         </div>
     `).join('');
@@ -229,7 +485,7 @@ function loadConditionTab() {
     updateReadinessGauge();
 }
 
-function loadAICoachTab() {
+async function loadAICoachTab() {
     const chatArea = document.getElementById('chatMessages');
     if (chatArea && chatArea.children.length === 0) {
         chatArea.innerHTML = `
@@ -322,8 +578,24 @@ function saveCheckIn() {
     }
 
     const today = new Date().toISOString().split('T')[0];
+    const checkIns = JSON.parse(localStorage.getItem('strivusCheckIns') || '[]');
+
+    const existingIndex = checkIns.findIndex(c => c.date === today);
+    if (existingIndex >= 0) {
+        checkIns[existingIndex] = { ...checkInData, date: today };
+    } else {
+        checkIns.push({ ...checkInData, date: today });
+    }
+
+    localStorage.setItem('strivusCheckIns', JSON.stringify(checkIns));
+
     if (window.syncCheckInToSupabase) {
         window.syncCheckInToSupabase(checkInData, today).then(() => {
+            if (window.aiCharacter) {
+                window.dispatchEvent(new CustomEvent('aiEvent', {
+                    detail: { event: 'checkin-logged', data: {} }
+                }));
+            }
             alert('Check-in saved!');
             checkInData = { sleep: null, energy: null, soreness: null, mood: null };
             document.querySelectorAll('.quick-btn').forEach(btn => btn.classList.remove('active'));
@@ -346,12 +618,17 @@ function saveWorkout() {
         exercises: recordData.exercises,
         intensity: recordData.rpe,
         notes: recordData.notes,
-        sports: []
+        sports: [],
+        duration: recordData.duration || 0
     };
 
     if (window.syncWorkoutToSupabase) {
         window.syncWorkoutToSupabase(workout).then(() => {
-            alert('Workout saved!');
+            if (window.aiCharacter) {
+                window.dispatchEvent(new CustomEvent('aiEvent', {
+                    detail: { event: 'workout-saved', data: { exercises: recordData.exercises.length } }
+                }));
+            }
             resetRecordTab();
             switchTab('dashboard');
         });
@@ -369,7 +646,7 @@ function resetRecordTab() {
     };
 }
 
-function openExercisePicker() {
+async function openExercisePicker() {
     const modal = document.createElement('div');
     modal.style.cssText = `
         position: fixed;
@@ -382,38 +659,65 @@ function openExercisePicker() {
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 20px;
     `;
 
     modal.innerHTML = `
-        <div class="glass-card" style="width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;">
-            <h3>Add Exercise</h3>
-            <p class="text-tertiary" style="margin-bottom: 16px;">Select an exercise to add</p>
-            <div id="exerciseList" style="display: grid; gap: 8px;"></div>
+        <div class="glass-card" style="width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 12px;">Add Exercise</h3>
+            <p class="text-tertiary" style="margin-bottom: 16px;">Select by muscle group</p>
+            <div id="muscleGroupTabs" style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;"></div>
+            <div id="exerciseList" style="display: grid; gap: 8px; flex: 1; overflow-y: auto;"></div>
             <button class="glass-btn glass-btn-secondary" onclick="this.closest('div').parentElement.remove()" style="width: 100%; margin-top: 16px;">Close</button>
         </div>
     `;
 
     document.body.appendChild(modal);
 
-    const exercises = [
-        'Bench Press', 'Squats', 'Deadlifts', 'Pull-ups', 'Rows',
-        'Dips', 'Leg Press', 'Lat Pulldown', 'Chest Fly', 'Leg Curl',
-        'Running', 'Cycling', 'Swimming', 'Rowing', 'Jump Rope'
-    ];
+    const exercises = await loadExercisesFromDB();
+    const categorized = categorizeExercisesByMuscle(exercises);
 
+    const muscleGroupTabs = modal.querySelector('#muscleGroupTabs');
     const exerciseList = modal.querySelector('#exerciseList');
-    exercises.forEach(ex => {
+
+    let currentMuscle = Object.keys(categorized)[0];
+
+    function renderExercises(muscle) {
+        exerciseList.innerHTML = '';
+        const muscleExercises = categorized[muscle] || [];
+        muscleExercises.forEach(ex => {
+            const btn = document.createElement('button');
+            btn.className = 'glass-btn glass-btn-secondary';
+            btn.textContent = ex.name;
+            btn.style.justifyContent = 'flex-start';
+            btn.onclick = () => {
+                recordData.exercises.push({ name: ex.name, sets: [], muscleGroup: ex.main_muscle_group });
+                updateSelectedExercises();
+                modal.remove();
+                if (window.aiCharacter) {
+                    window.dispatchEvent(new CustomEvent('aiEvent', {
+                        detail: { event: 'exercise-added', data: { name: ex.name } }
+                    }));
+                }
+            };
+            exerciseList.appendChild(btn);
+        });
+    }
+
+    Object.keys(categorized).forEach(muscle => {
         const btn = document.createElement('button');
-        btn.className = 'glass-btn glass-btn-secondary';
-        btn.textContent = ex;
-        btn.style.justifyContent = 'flex-start';
+        btn.className = `glass-btn glass-btn-small ${muscle === currentMuscle ? 'active' : ''}`;
+        btn.textContent = muscle;
         btn.onclick = () => {
-            recordData.exercises.push({ name: ex, sets: [] });
-            updateSelectedExercises();
-            modal.remove();
+            currentMuscle = muscle;
+            document.querySelectorAll('#muscleGroupTabs button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderExercises(muscle);
         };
-        exerciseList.appendChild(btn);
+        muscleGroupTabs.appendChild(btn);
     });
+
+    renderExercises(currentMuscle);
 }
 
 function updateSelectedExercises() {
@@ -484,7 +788,7 @@ function removeExercise(index) {
     updateSelectedExercises();
 }
 
-function sendAIMessage() {
+async function sendAIMessage() {
     const input = document.getElementById('aiInput');
     const message = input.value.trim();
 
@@ -498,16 +802,98 @@ function sendAIMessage() {
 
     input.value = '';
 
-    setTimeout(() => {
+    const loadingBubble = document.createElement('div');
+    loadingBubble.className = 'chat-bubble ai';
+    loadingBubble.textContent = 'Thinking...';
+    chatArea.appendChild(loadingBubble);
+
+    chatArea.parentElement.scrollTop = chatArea.parentElement.scrollHeight;
+
+    try {
+        const userContext = await getUserContextForAI();
+        const response = await callAICoach(message, userContext);
+
+        chatArea.removeChild(loadingBubble);
+
         const aiBubble = document.createElement('div');
         aiBubble.className = 'chat-bubble ai';
-        aiBubble.innerHTML = generateAIResponse(message);
+        aiBubble.textContent = response;
         chatArea.appendChild(aiBubble);
 
         chatArea.parentElement.scrollTop = chatArea.parentElement.scrollHeight;
 
-        animateAICharacter();
-    }, 500);
+        if (window.aiCharacter) {
+            window.aiCharacter.react('happy');
+        }
+    } catch (error) {
+        console.error('Error getting AI response:', error);
+        chatArea.removeChild(loadingBubble);
+
+        const errorBubble = document.createElement('div');
+        errorBubble.className = 'chat-bubble ai';
+        errorBubble.textContent = 'Sorry, I had trouble thinking right now. Try again!';
+        chatArea.appendChild(errorBubble);
+    }
+}
+
+async function getUserContextForAI() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return {};
+
+        const [workoutRes, prRes, checkInRes] = await Promise.all([
+            supabase.from('workouts').select('*').eq('user_id', user.id).order('workout_date', { ascending: false }).limit(5),
+            supabase.from('user_exercise_prs').select('*').eq('user_id', user.id).order('max_weight', { ascending: false }).limit(5),
+            supabase.from('user_check_ins').select('*').eq('user_id', user.id).order('check_in_date', { ascending: false }).limit(3),
+        ]);
+
+        return {
+            userId: user.id,
+            recentWorkouts: workoutRes.data || [],
+            personalRecords: prRes.data || [],
+            checkInData: checkInRes.data || [],
+        };
+    } catch (error) {
+        console.error('Error fetching user context:', error);
+        return {};
+    }
+}
+
+async function callAICoach(message, userContext) {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
+        const supabaseUrl = import.meta.env?.VITE_SUPABASE_URL ||
+            (typeof window !== 'undefined' && window.SUPABASE_URL) ||
+            'https://your-project.supabase.co';
+
+        const anonKey = import.meta.env?.VITE_SUPABASE_ANON_KEY ||
+            (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) ||
+            'your-anon-key';
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/ai-coach`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${session.access_token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message,
+                userContext,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.response || generateAIResponse(message);
+    } catch (error) {
+        console.error('Error calling AI Coach:', error);
+        return generateAIResponse(message);
+    }
 }
 
 function sendAIPrompt(prompt) {
@@ -576,6 +962,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rpeSlider')?.addEventListener('input', (e) => {
         recordData.rpe = parseInt(e.target.value);
         document.getElementById('rpeValue').textContent = recordData.rpe;
+    });
+
+    document.getElementById('durationInput')?.addEventListener('input', (e) => {
+        recordData.duration = parseInt(e.target.value) || 0;
     });
 
     document.getElementById('workoutDate')?.addEventListener('change', (e) => {
