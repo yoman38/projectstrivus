@@ -246,7 +246,8 @@ async function calculateAndStoreFitnessMetrics(workout_date) {
         form_score: formScore.toFixed(2),
         acwr: acwr.toFixed(4),
         muscle_group_data: muscleFatigue,
-        muscle_group_fatigue: muscleFatigue
+        muscle_group_fatigue: muscleFatigue,
+        muscle_group_readiness: muscleReadiness
     };
 
     if (existingMetric) {

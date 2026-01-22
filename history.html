@@ -1,110 +1,267 @@
-<div id="history-dashboard">
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <h2 class="text-3xl font-bold text-white mb-2">Training History & Analytics</h2>
-            <p class="text-slate-400">Track your progress, analyze patterns, and visualize your training journey.</p>
-        </div>
-        <button id="history-refresh-btn" class="bg-action-blue hover:bg-action-blue-hover text-white font-semibold py-2 px-4 rounded-lg transition flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            <span id="refresh-text">Refresh</span>
-        </button>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Training History - Strivus</title>
 
-    <div id="history-loading" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div class="bg-slate-800 border border-slate-600 rounded-xl p-8 text-center">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-action-blue mx-auto mb-4"></div>
-            <p class="text-white text-lg font-semibold">Loading your training history...</p>
-        </div>
-    </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'action-blue': '#02B2FC',
+                        'action-blue-hover': '#0298d6',
+                        'accent-blue': '#0235FC',
+                        'accent-teal': '#02FCC9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 1rem;
+            padding: 1.25rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: #02B2FC;
+        }
+        .workout-card {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #374151;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .workout-card:hover {
+            border-color: #02B2FC;
+            transform: translateY(-1px);
+        }
+        .workout-card.expanded {
+            border-color: #02FCC9;
+            background: linear-gradient(135deg, #1e3a3a 0%, #0d2323 100%);
+        }
+        .tab-btn {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            color: #02B2FC;
+            border-bottom-color: #02B2FC;
+        }
+        .tab-btn:hover:not(.active) {
+            color: #cbd5e1;
+        }
+        .filter-chip {
+            padding: 0.5rem 1rem;
+            background: #374151;
+            color: #d1d5db;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .filter-chip.active {
+            background: #02B2FC;
+            color: white;
+            border-color: #02B2FC;
+        }
+        .filter-chip:hover:not(.active) {
+            background: #4b5563;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-strength { background: #1e3a8a; color: #93c5fd; }
+        .badge-cardio { background: #7f1d1d; color: #fca5a5; }
+        .badge-mixed { background: #713f12; color: #fde047; }
+        .badge-sport { background: #064e3b; color: #6ee7b7; }
+        .intensity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .intensity-low { background: #10b981; }
+        .intensity-medium { background: #f59e0b; }
+        .intensity-high { background: #ef4444; }
+        .content-area {
+            height: calc(100vh - 220px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .content-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        .content-area::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .content-area::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .content-area::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+        .exercise-tag {
+            background: #0f172a;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            border: 1px solid #1e293b;
+        }
+        .loading-shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 768px) {
+            .content-area {
+                height: calc(100vh - 280px);
+            }
+            .stat-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300">
 
-    <div id="history-error" class="hidden mb-6 bg-red-900/20 border border-red-500 rounded-lg p-4">
-        <div class="flex items-start gap-3">
-            <span class="text-red-500 text-xl">⚠️</span>
-            <div class="flex-1">
-                <h3 class="text-red-400 font-semibold mb-1">Error Loading History</h3>
-                <p id="history-error-message" class="text-red-300 text-sm"></p>
-                <button id="history-retry-btn" class="mt-3 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-lg transition text-sm">
-                    Retry
+    <div class="h-screen flex flex-col">
+        <div class="flex-shrink-0 bg-slate-800 border-b border-slate-700 px-4 py-4">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white">Training History</h1>
+                    <p class="text-sm text-slate-400 mt-1">Track your progress and performance</p>
+                </div>
+                <button id="close-history" class="text-slate-400 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
                 </button>
             </div>
-        </div>
-    </div>
 
-    <div id="stats-summary" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div class="control-card lg:col-span-2">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h3 class="text-2xl font-bold text-white">Activity Calendar</h3>
-                    <p class="text-sm text-slate-400 mt-1">90-day workout heatmap</p>
+            <div id="stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="stat-card">
+                    <div class="text-xs text-slate-400 mb-1">Workouts</div>
+                    <div class="text-2xl font-bold text-white" id="stat-workouts">0</div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="calendar-prev-month" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors">
-                        <span>←</span>
-                    </button>
-                    <span id="calendar-month-label" class="text-white font-semibold min-w-[120px] text-center"></span>
-                    <button id="calendar-next-month" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-sm transition-colors">
-                        <span>→</span>
+                <div class="stat-card">
+                    <div class="text-xs text-slate-400 mb-1">Total Volume</div>
+                    <div class="text-2xl font-bold text-accent-teal" id="stat-volume">0kg</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-xs text-slate-400 mb-1">Avg Intensity</div>
+                    <div class="text-2xl font-bold text-action-blue" id="stat-intensity">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="text-xs text-slate-400 mb-1">Streak</div>
+                    <div class="text-2xl font-bold text-white" id="stat-streak">0d</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-shrink-0 bg-slate-800 border-b border-slate-700 px-4">
+            <div class="flex items-center gap-1 overflow-x-auto">
+                <button class="tab-btn active" data-tab="workouts">Workouts</button>
+                <button class="tab-btn" data-tab="prs">PRs</button>
+                <button class="tab-btn" data-tab="analytics">Analytics</button>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-hidden">
+            <div id="tab-workouts" class="content-area px-4 py-4">
+                <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                    <button class="filter-chip active" data-filter="all">All</button>
+                    <button class="filter-chip" data-filter="strength">Strength</button>
+                    <button class="filter-chip" data-filter="cardio">Cardio</button>
+                    <button class="filter-chip" data-filter="sport">Sport</button>
+                </div>
+
+                <div id="loading-state" class="space-y-3">
+                    <div class="loading-shimmer h-24 rounded-lg"></div>
+                    <div class="loading-shimmer h-24 rounded-lg"></div>
+                    <div class="loading-shimmer h-24 rounded-lg"></div>
+                </div>
+
+                <div id="workouts-list" class="space-y-3 hidden"></div>
+
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="text-6xl mb-4">📊</div>
+                    <h3 class="text-xl font-bold text-white mb-2">No Workouts Yet</h3>
+                    <p class="text-slate-400 mb-4">Start logging your training sessions</p>
+                    <button onclick="window.location.href='record.html'" class="bg-action-blue hover:bg-action-blue-hover text-white font-semibold py-2 px-6 rounded-lg transition">
+                        Record Workout
                     </button>
                 </div>
             </div>
-            <div id="calendar-heatmap"></div>
-        </div>
 
-        <div class="control-card">
-            <h3 class="text-2xl font-bold text-white mb-4">Weekly Activity</h3>
-            <div id="weekly-breakdown"></div>
+            <div id="tab-prs" class="content-area px-4 py-4 hidden">
+                <div id="prs-list" class="space-y-3"></div>
+
+                <div id="prs-empty" class="empty-state">
+                    <div class="text-6xl mb-4">🏆</div>
+                    <h3 class="text-xl font-bold text-white mb-2">No Personal Records</h3>
+                    <p class="text-slate-400">Complete workouts to set new PRs</p>
+                </div>
+            </div>
+
+            <div id="tab-analytics" class="content-area px-4 py-4 hidden">
+                <div class="space-y-4">
+                    <div class="stat-card">
+                        <h3 class="text-lg font-bold text-white mb-3">Top Exercises</h3>
+                        <div id="top-exercises" class="space-y-2"></div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h3 class="text-lg font-bold text-white mb-3">Monthly Summary</h3>
+                        <div id="monthly-summary" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div class="control-card">
-            <h3 class="text-2xl font-bold text-white mb-4">Training Distribution</h3>
-            <div id="training-distribution"></div>
-        </div>
-
-        <div class="control-card">
-            <h3 class="text-2xl font-bold text-white mb-4">Top Exercises</h3>
-            <p class="text-sm text-slate-400 -mt-2 mb-4">Most frequently performed exercises</p>
-            <div id="top-exercises"></div>
-        </div>
-    </div>
-
-    <div class="control-card mb-8">
-        <h3 class="text-2xl font-bold text-white mb-4">Recent Workouts</h3>
-        <p class="text-sm text-slate-400 -mt-2 mb-4">Last 15 training sessions</p>
-        <div id="recent-workouts"></div>
-    </div>
-
-    <div class="control-card">
-        <h3 class="text-2xl font-bold text-white mb-4">Personal Records Progression</h3>
-        <p class="text-sm text-slate-400 -mt-2 mb-4">Track your strength improvements over time</p>
-        <div id="pr-progression"></div>
-    </div>
-</div>
-
-<script type="module">
-    // Ensure Supabase config is loaded before initializing
-    if (!window.SUPABASE_CONFIG) {
-        console.error('SUPABASE_CONFIG not found - waiting for config to load');
-        // Wait for config to be available
-        await new Promise((resolve) => {
-            const checkConfig = setInterval(() => {
-                if (window.SUPABASE_CONFIG) {
-                    clearInterval(checkConfig);
-                    resolve();
-                }
-            }, 50);
-            // Timeout after 5 seconds
-            setTimeout(() => {
-                clearInterval(checkConfig);
-                resolve();
-            }, 5000);
-        });
-    }
-
-    import { initializeHistoryPage } from './js/history-page.js';
-    initializeHistoryPage();
-</script>
+    <script src="/js/config.js"></script>
+    <script type="module" src="/js/history-page.js"></script>
+</body>
+</html>
